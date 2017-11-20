@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <sys/msg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -165,7 +166,7 @@ int main(int argc, char const *argv[])
 	          //Request a resource
 	          if(choice) {
 	           pcbArray[processNumber].request = chooseRandomResource(); 
-	           sendMessage(masterQueueId, 3);
+	           //sendMessage(masterQueueId, 3);
 	          }
 	          //Release a resource
 	          else {
@@ -176,7 +177,7 @@ int main(int argc, char const *argv[])
 	                break;
 	              }
 	            }
-	            sendMessage(masterQueueId, 3);
+	            //sendMessage(masterQueueId, 3);
 	          }
 	        }
 	      }
@@ -200,7 +201,7 @@ int main(int argc, char const *argv[])
 
 	if(!pcbArray[processNumber].terminate) {
 		pcbArray[processNumber].processID = -1;
-		sendMessage(masterQueueId, 3);
+		//sendMessage(masterQueueId, 3);
 	}
 
 	// REMAINDER

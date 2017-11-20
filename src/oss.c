@@ -5,6 +5,7 @@
 #include <sys/ipc.h>
 #include <sys/wait.h>
 #include <sys/shm.h>
+#include <sys/msg.h>
 #include <semaphore.h>
 #include <sys/stat.h>
 #include <fcntl.h>
