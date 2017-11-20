@@ -382,7 +382,7 @@ void spawnChildren(int childrenCount) {
 
 		/* child process */
 		if(childpid == 0) {
-			fprintf(stderr, "Max processes running now: %d\n", max_processes_at_instant++);
+			fprintf(stderr, "Max processes running now: %d\n", max_processes_at_instant);
 			childpid = getpid();
       		pid_t gpid = getpgrp();
       		pcbArray[processNumberSpawning].createTime = (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds);
@@ -396,7 +396,7 @@ void spawnChildren(int childrenCount) {
 			execv("./user", userOptions);
 			fprintf(stderr, "Print if error %s\n");
 		}
-		
+		max_processes_at_instant++;
 	}	
 }
 
