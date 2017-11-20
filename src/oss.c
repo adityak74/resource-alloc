@@ -370,34 +370,36 @@ void spawnChildren(int childrenCount) {
       }
     }
 
-	for (j = 0; j < childrenCount; ++j){
-		printf("About to spawn process #%d\n", processNumberSpawning
-			);
-		
-		//perror on bad fork
-	    if((childpid = fork()) < 0) {
-	      perror("Fork Failure");
-	      //exit(1);
-	    }
+    if( processNumberSpawning != -1 ) {
+		for (j = 0; j < childrenCount; ++j){
+			printf("About to spawn process #%d\n", processNumberSpawning
+				);
+			
+			//perror on bad fork
+		    if((childpid = fork()) < 0) {
+		      perror("Fork Failure");
+		      //exit(1);
+		    }
 
-		/* child process */
-		if(childpid == 0) {
-			fprintf(stderr, "Max processes running now: %d\n", max_processes_at_instant);
-			childpid = getpid();
-      		pid_t gpid = getpgrp();
-      		pcbArray[processNumberSpawning].createTime = (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds);
-        	pcbArray[processNumberSpawning].processID = childpid;
-			sprintf(i_arg, "%d", processNumberSpawning);
-			sprintf(s_arg, "%d", max_processes_at_instant);
-			sprintf(p_arg, "%d", pcbShmid);
-			// share shmid with children
-			sprintf(k_arg, "%d", shmid);
-			char *userOptions[] = {"./user", "-i", i_arg, "-s", s_arg, "-k", k_arg, "-p", p_arg, (char *)0};
-			execv("./user", userOptions);
-			fprintf(stderr, "Print if error %s\n");
-		}
-		max_processes_at_instant++;
-	}	
+			/* child process */
+			if(childpid == 0) {
+				fprintf(stderr, "Max processes running now: %d\n", max_processes_at_instant);
+				childpid = getpid();
+	      		pid_t gpid = getpgrp();
+	      		pcbArray[processNumberSpawning].createTime = (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds);
+	        	pcbArray[processNumberSpawning].processID = childpid;
+				sprintf(i_arg, "%d", processNumberSpawning);
+				sprintf(s_arg, "%d", max_processes_at_instant);
+				sprintf(p_arg, "%d", pcbShmid);
+				// share shmid with children
+				sprintf(k_arg, "%d", shmid);
+				char *userOptions[] = {"./user", "-i", i_arg, "-s", s_arg, "-k", k_arg, "-p", p_arg, (char *)0};
+				execv("./user", userOptions);
+				fprintf(stderr, "Print if error %s\n");
+			}
+			max_processes_at_instant++;
+		}	
+	}
 }
 
 int processMessageQueue(void) {
