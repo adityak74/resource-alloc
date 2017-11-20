@@ -22,7 +22,7 @@
 
 const int TOTAL_SLAVES = 100;
 const int MAXSLAVES = 20;
-const long long INCREMENTER = 4000;
+const long long INCREMENTER = 40000;
 
 void showHelpMessage();
 void intHandler(int);
@@ -52,7 +52,7 @@ int status;
 int messageReceived = 0;
 int vFlag;
 long long lastDeadlockCheck;
-long long nextSpawnTime;
+long long nextSpawnTime = 0;
 long long NANO_MODIFIER = 1000000000;
 void resourceSnapshot(void);
 void setupAllResources(void);
@@ -68,7 +68,9 @@ void performProcessCleanup(int i);
 void killAProcess(void);
 int reqAvail(int *work, int p);
 int deadlock(void);
+void printResourceTable();
 int vFlag = 1;
+static int global_resource_grants = 0;
 
 
 char *i_arg;
@@ -277,6 +279,7 @@ int main(int argc, char const *argv[])
 		if(nextSpawnTimeCheck()) {
 		  spawnChildren(1);
 		  setNextSpawnTime();
+		  //printf("nextSpawnTime is setting..\n");
 		}
 		if( (shpinfo->seconds*1000000000+shpinfo->nanoseconds) - lastDeadlockCheck > 1000000000) {
 		  lastDeadlockCheck = shpinfo->seconds*1000000000 + shpinfo->nanoseconds;
@@ -306,14 +309,10 @@ int main(int argc, char const *argv[])
 		}
 		checkAndProcessRequests();
 
-
-
+		if(global_resource_grants%20) {
+			printResourceTable();
+		}
 		//fprintf(stderr, "CURRENT MASTER TIME : %ld.%ld\n", shpinfo -> seconds, shpinfo -> nanoseconds);
-
-		if(max_processes_at_instant <= TOTAL_SLAVES) {
-	      spawnChildren(1);
-	    }
-	    //fprintf(stderr, "CURRENT MASTER TIME : %ld.%ld\n", shpinfo -> seconds, shpinfo -> nanoseconds);
 	}
 
 	// Cleanup
@@ -332,19 +331,20 @@ int nextSpawnTimeCheck(void) {
     printf("Checking time to spawn: future = %llu.%09llu timer = %llu.%09llu\n", nextSpawnTime / NANO_MODIFIER, nextSpawnTime % NANO_MODIFIER, shpinfo->seconds, shpinfo->nanoseconds);
   }
   if(vFlag) {
-    fprintf(file, "Checking time to spawn: future = %llu timer = %llu\n", nextSpawnTime, (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds));
+    fprintf(file, "Checking time to spawn: future = %lld timer = %lld\n", nextSpawnTime, (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds));
   }
 
   return (shpinfo->seconds*NANO_MODIFIER + shpinfo->nanoseconds) >= nextSpawnTime ? 1 : 0;
 }
 
 void setNextSpawnTime(void) {
-  nextSpawnTime = (shpinfo->nanoseconds*NANO_MODIFIER + shpinfo->nanoseconds) + rand() % MAX_FUTURE_SPAWN;
+  printf("%lld %lld\n", shpinfo->seconds, shpinfo->nanoseconds);
+  nextSpawnTime = (shpinfo->seconds * NANO_MODIFIER + shpinfo->nanoseconds) + rand() % MAX_FUTURE_SPAWN;
   if(vFlag) {
-    printf("Will try to spawn slave at time %s%s%llu.%09llu\n", nextSpawnTime / NANO_MODIFIER, nextSpawnTime % NANO_MODIFIER);
+    printf("Will try to spawn slave at time %llu.%09llu\n", nextSpawnTime / NANO_MODIFIER, nextSpawnTime % NANO_MODIFIER);
   }        
   if(vFlag) {
-    fprintf(file, "Will try to spawn slave at time %llu\n", nextSpawnTime);
+    fprintf(file, "Will try to spawn slave at time %lld\n", nextSpawnTime);
   }
 }
 
@@ -481,9 +481,34 @@ void resourceSnapshot(void) {
   int i;
   for(i = 0; i < 20; i++) {
     if(vFlag) {
-      printf("Resource %d has %d available out of %d\n", i, resourceArray[i].availQty, resourceArray[i].qty);
+      fprintf(stderr, "Resource %d has %d available out of %d\n", i, resourceArray[i].availQty, resourceArray[i].qty);
     }
   }
+}
+
+void printResourceTable() {
+	printf("---------------Printing resource table-----------------\n");
+	int i;
+	for (int i = 0; i < 20; ++i)
+	{
+		printf("\tR%d", i);
+	}
+	printf("\n");
+	for (i = 0; i < 20; ++i)
+	{
+		if ( pcbArray[i].processID != -1)
+		{
+			printf("P%d\t", i);
+			int j = 20;
+			for (int i = 0; i < 20; ++i)
+			{
+				fprintf("%d\t", pcbArray[i].ralloc.qty[j]);
+			}
+			printf("\n");
+		} else
+			break;
+	}
+	printf("-------------------------------------------------------\n");
 }
 
 void checkAndProcessRequests(void) {
@@ -549,6 +574,10 @@ void performResourceRequest(int resourceType, int i) {
     pcbArray[i].request = -1;
     //Decrease the quantity of the resource type in the resource array
     resourceArray[resourceType].availQty--;
+
+    // increment global resouce alloc count
+    global_resource_grants++;
+
     if(vFlag) {
       printf("There are now %d out of %d for resource %d\n", resourceArray[resourceType].availQty, resourceArray[resourceType].qty, resourceType);
     }
@@ -757,10 +786,12 @@ void intHandler(int SIGVAL) {
 
 	if(SIGVAL == SIGINT) {
 		fprintf(stderr, "%sCTRL-C Interrupt initiated.\n");
+		shpinfo -> sigNotReceived = 0;
 	}
 
 	if(SIGVAL == SIGALRM) {
 		fprintf(stderr, "%sMaster timed out. Terminating rest all process.\n");
+		shpinfo -> sigNotReceived = 0;
 	}
 
 	kill(-getpgrp(), SIGQUIT);

@@ -132,25 +132,24 @@ int main(int argc, char const *argv[])
 	start_nanoseconds = shpinfo -> nanoseconds;
   	long long startTime = start_seconds*1000000000 + start_nanoseconds;
 
-  	// SEMAPHORE EXCLUSION
+ //  	// SEMAPHORE EXCLUSION
 
-  	if (getnamed("tesemn", &semlockp, 1) == -1) {
-	  perror("Failed to create named semaphore");
-	  return 1;
-	}
+ //  	if (getnamed("tesetmnd", &semlockp, 1) == -1) {
+	//   perror("Failed to create named semaphore");
+	//   return 1;
+	// }
 
-	while (sem_wait(semlockp) == -1)                         /* entry section */ 
-       if (errno != EINTR) { 
-          perror("Failed to lock semlock");
-          return 1;
-       }
+	// while (sem_wait(semlockp) == -1)                         /* entry section */ 
+ //       if (errno != EINTR) { 
+ //          perror("Failed to lock semlock");
+ //          return 1;
+ //       }
 
     // CRITICAL SECTION
 
     // fprintf(stderr, "USER PROCNUM# :%d CLOCK READ : %lld %lld\n", getpid() ,shpinfo -> seconds, shpinfo -> nanoseconds);
 
     do {
-  
 	    //If this process' request flag is -1, it is not waiting on anything
 	    //go ahead and determine an action
 	    if(pcbArray[processNumber].request == -1 && pcbArray[processNumber].release == -1) {
@@ -166,7 +165,7 @@ int main(int argc, char const *argv[])
 	          //Request a resource
 	          if(choice) {
 	           pcbArray[processNumber].request = chooseRandomResource(); 
-	           //sendMessage(masterQueueId, 3);
+	           sendMessage(masterQueueId, 3);
 	          }
 	          //Release a resource
 	          else {
@@ -177,12 +176,12 @@ int main(int argc, char const *argv[])
 	                break;
 	              }
 	            }
-	            //sendMessage(masterQueueId, 3);
+	            sendMessage(masterQueueId, 3);
 	          }
 	        }
 	      }
 	    }
-	} while (notFinished && shpinfo->sigNotReceived && !pcbArray[processNumber].terminate);
+	  } while (notFinished && shpinfo->sigNotReceived && !pcbArray[processNumber].terminate);
 
 	// wait if any other process data in the sharedMessage
 	// while( ossShmMsg -> procID != -1 ) {
@@ -194,19 +193,19 @@ int main(int argc, char const *argv[])
 	// ossShmMsg -> nanoseconds = shpinfo -> nanoseconds;
     // CRITICAL ENDS
 	
-	if (sem_post(semlockp) == -1) {                           /* exit section */
-	  perror("Failed to unlock semlock");
-	  return 1; 
-	}
+	// if (sem_post(semlockp) == -1) {                            exit section 
+	//   perror("Failed to unlock semlock");
+	//   return 1; 
+	// }
 
 	if(!pcbArray[processNumber].terminate) {
 		pcbArray[processNumber].processID = -1;
-		//sendMessage(masterQueueId, 3);
+		sendMessage(masterQueueId, 3);
 	}
 
 	// REMAINDER
-	if (r_wait(NULL) == -1)                              /* remainder section */
-	  return 1;
+	// if (r_wait(NULL) == -1)                              /* remainder section */
+	//   return 1;
 
 	if(shmdt(shpinfo) == -1) {
 		perror("    Slave could not detach shared memory");
